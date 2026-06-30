@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 
 "${SCRIPT_DIR}/defconfig.sh"
-clean_device_output_artifacts
 
 make_args=("-j${JOBS}")
 if [[ "${BUILD_VERBOSE}" == "1" ]]; then

@@ -44,13 +44,10 @@ make build
 ```
 
 Firmware and build metadata are copied to `output/<date>-<source-commit>/`.
-For the default modified U-Boot profile, the expected firmware image is a
-`cudy_tr3000-v1-ubootmod` `sysupgrade.itb`. A `sysupgrade.bin` image is not the
-intended output for this OpenWrt U-Boot layout.
 
 ## Default Firmware Features
 
-- Cudy TR3000 `cudy_tr3000-v1-ubootmod` profile, patched to emit an OpenWrt U-Boot layout `sysupgrade.itb`.
+- Cudy TR3000 `cudy_tr3000-v1-ubootmod` profile, validated from the upstream MediaTek image definitions.
 - LuCI, SSH-related base support, and common network tools.
 - `luci-app-ttyd` for an internal LuCI web terminal.
 - `luci-theme-argon`.
