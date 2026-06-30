@@ -4,7 +4,7 @@ This repository stores router firmware build projects and helper scripts.
 
 ## Projects
 
-- `tr3000/` - Cudy TR3000 128M ImmortalWrt builder.
+- `tr3000/` - Cudy TR3000 v1 U-Boot mod ImmortalWrt builder.
 
 ## TR3000 Quick Start
 

@@ -1,4 +1,4 @@
-# Cudy TR3000 128M ImmortalWrt Builder
+# Cudy TR3000 v1 U-Boot Mod ImmortalWrt Builder
 
 This project builds firmware from `padavanonly/immortalwrt-mt798x-6.6` inside Docker. The WSL side only runs the entry commands and stores the source tree, caches, and output files.
 
@@ -28,7 +28,7 @@ Prepare the source tree and feeds:
 make init
 ```
 
-Generate the Cudy TR3000 128M config. This inherits the upstream
+Generate the Cudy TR3000 v1 U-Boot mod config. This inherits the upstream
 `defconfig/mt7981-ax3000.config` MTK closed-driver/HNAT/WARP defaults, filters
 out its multi-device target selection, then applies the Cudy TR3000 target and
 `configs/cudy_tr3000_128m.seed` package overlay:
@@ -47,7 +47,7 @@ Firmware and build metadata are copied to `output/<date>-<source-commit>/`.
 
 ## Default Firmware Features
 
-- Cudy TR3000 profile auto-detection from the upstream MediaTek image definitions.
+- Cudy TR3000 `cudy_tr3000-v1-ubootmod` profile, validated from the upstream MediaTek image definitions.
 - LuCI, SSH-related base support, and common network tools.
 - `luci-app-ttyd` for an internal LuCI web terminal.
 - `luci-theme-argon`.
@@ -57,13 +57,13 @@ Firmware and build metadata are copied to `output/<date>-<source-commit>/`.
 - `luci-app-advanced-reboot`.
 - ZTE F50 USB shared-network support through RNDIS, CDC Ethernet, and CDC NCM kernel modules.
 
-The default profile is the stock Cudy TR3000 v1 profile:
+The default profile is the Cudy TR3000 v1 modified U-Boot profile:
 
 ```bash
-DEVICE_PROFILE=cudy_tr3000-v1
+DEVICE_PROFILE=cudy_tr3000-v1-ubootmod
 ```
 
-Do not switch to `cudy_tr3000-v1-256mb` or `cudy_tr3000-v1-ubootmod` unless your exact hardware and bootloader layout match those variants.
+Use `cudy_tr3000-v1` only for the stock/original bootloader layout. Do not switch to `cudy_tr3000-v1-256mb` unless your exact hardware matches that variant.
 
 ## Main Targets
 
