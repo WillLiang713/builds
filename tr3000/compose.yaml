@@ -15,6 +15,7 @@ services:
       DL_DIR: /workspace/dl
       CCACHE_DIR: /workspace/ccache
       CONFIG_SEED: /workspace/configs/cudy_tr3000_128m.seed
+      BASE_DEFCONFIG: ${BASE_DEFCONFIG:-/workspace/source/defconfig/mt7981-ax3000.config}
       UPSTREAM_REPO: ${UPSTREAM_REPO:-https://github.com/padavanonly/immortalwrt-mt798x-6.6.git}
       UPSTREAM_REF: ${UPSTREAM_REF:-}
       DEVICE_PROFILE: ${DEVICE_PROFILE:-cudy_tr3000-v1}

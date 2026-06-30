@@ -28,7 +28,10 @@ Prepare the source tree and feeds:
 make init
 ```
 
-Generate the Cudy TR3000 128M config:
+Generate the Cudy TR3000 128M config. This inherits the upstream
+`defconfig/mt7981-ax3000.config` MTK closed-driver/HNAT/WARP defaults, filters
+out its multi-device target selection, then applies the Cudy TR3000 target and
+`configs/cudy_tr3000_128m.seed` package overlay:
 
 ```bash
 make defconfig
@@ -66,7 +69,7 @@ Do not switch to `cudy_tr3000-v1-256mb` or `cudy_tr3000-v1-ubootmod` unless your
 
 ```text
 make init        Clone/update source metadata, configure feeds, validate packages
-make defconfig   Generate source/.config from configs/cudy_tr3000_128m.seed
+make defconfig   Generate source/.config from the upstream MT7981 defconfig plus configs/cudy_tr3000_128m.seed
 make menuconfig  Open OpenWrt menuconfig inside the container
 make build       Compile firmware and collect output
 make output      Collect existing build output

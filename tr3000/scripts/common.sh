@@ -7,6 +7,7 @@ OUTPUT_DIR="${OUTPUT_DIR:-${WORKSPACE}/output}"
 DL_DIR="${DL_DIR:-${WORKSPACE}/dl}"
 CCACHE_DIR="${CCACHE_DIR:-${WORKSPACE}/ccache}"
 CONFIG_SEED="${CONFIG_SEED:-${WORKSPACE}/configs/cudy_tr3000_128m.seed}"
+BASE_DEFCONFIG="${BASE_DEFCONFIG:-${SOURCE_DIR}/defconfig/mt7981-ax3000.config}"
 
 UPSTREAM_REPO="${UPSTREAM_REPO:-https://github.com/padavanonly/immortalwrt-mt798x-6.6.git}"
 UPSTREAM_REF="${UPSTREAM_REF:-}"
