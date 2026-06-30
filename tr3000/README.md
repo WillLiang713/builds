@@ -54,7 +54,6 @@ Firmware and build metadata are copied to `output/<date>-<source-commit>/`.
 - `luci-app-turboacc-mtk` for MTK LuCI network acceleration controls.
 - `luci-app-nikki` from the nikki feed.
 - `luci-app-upnp` and `miniupnpd`.
-- `luci-app-advanced-reboot`.
 - ZTE F50 USB shared-network support through RNDIS, CDC Ethernet, and CDC NCM kernel modules.
 
 The default profile is the Cudy TR3000 v1 modified U-Boot profile:

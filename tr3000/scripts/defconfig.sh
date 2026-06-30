@@ -48,7 +48,6 @@ required_symbols=(
   CONFIG_PACKAGE_luci-app-nikki
   CONFIG_PACKAGE_luci-app-upnp
   CONFIG_PACKAGE_miniupnpd-nftables
-  CONFIG_PACKAGE_luci-app-advanced-reboot
   CONFIG_PACKAGE_kmod-usb-net
   CONFIG_PACKAGE_kmod-usb-net-cdc-ether
   CONFIG_PACKAGE_kmod-usb-net-cdc-ncm

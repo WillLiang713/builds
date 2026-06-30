@@ -58,7 +58,7 @@ profile="$(detect_device_profile)"
 log "detected device profile: ${profile}"
 
 missing=()
-for package_name in luci-app-nikki luci-theme-argon luci-app-turboacc-mtk luci-app-ttyd luci-app-upnp luci-app-advanced-reboot; do
+for package_name in luci-app-nikki luci-theme-argon luci-app-turboacc-mtk luci-app-ttyd luci-app-upnp; do
   if [[ -z "$(find_package_makefile "${package_name}")" ]]; then
     missing+=("${package_name}")
   fi
