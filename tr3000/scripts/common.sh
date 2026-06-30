@@ -103,10 +103,12 @@ patch_tr3000_ubootmod_itb_profile() {
       print "  DEVICE_VARIANT := v1 (OpenWrt U-Boot layout)"
       print "  DEVICE_DTS := mt7981b-cudy-tr3000-v1-ubootmod"
       print "  DEVICE_DTS_DIR := ../dts"
+      print "  SUPPORTED_DEVICES += R47"
       print "  DEVICE_PACKAGES := kmod-usb3 kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount"
       print "  UBINIZE_OPTS := -E 5"
       print "  BLOCKSIZE := 128k"
       print "  PAGESIZE := 2048"
+      print "  IMAGE_SIZE := 114688k"
       print "  KERNEL_IN_UBI := 1"
       print "  UBOOTENV_IN_UBI := 1"
       print "  IMAGES := sysupgrade.itb"
@@ -156,6 +158,27 @@ patch_tr3000_ubootmod_itb_profile() {
   else
     mv "${tmp}" "${image_file}"
     log "patched Cudy TR3000 ubootmod profile to emit sysupgrade.itb"
+  fi
+}
+
+clean_device_output_artifacts() {
+  local target_output="${SOURCE_DIR}/bin/targets/mediatek/filogic"
+  [[ -d "${target_output}" ]] || return 0
+
+  local prefix="immortalwrt-mediatek-filogic-${DEVICE_PROFILE}"
+  local removed=0
+  local artifact
+
+  shopt -s nullglob
+  for artifact in "${target_output}/${prefix}-"* "${target_output}/${prefix}.manifest"; do
+    rm -f "${artifact}"
+    removed=1
+  done
+  shopt -u nullglob
+
+  if (( removed )); then
+    rm -f "${target_output}/profiles.json" "${target_output}/sha256sums"
+    log "removed stale firmware artifacts for ${DEVICE_PROFILE}"
   fi
 }
 
