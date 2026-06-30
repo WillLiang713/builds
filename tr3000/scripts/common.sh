@@ -85,6 +85,80 @@ select_nikki_mihomo_provider() {
   fi
 }
 
+patch_tr3000_ubootmod_itb_profile() {
+  local image_file="${SOURCE_DIR}/target/linux/mediatek/image/filogic.mk"
+  [[ -f "${image_file}" ]] || die "mediatek filogic image definitions not found: ${image_file}"
+
+  local tmp rc
+  tmp="$(mktemp)"
+  rc=0
+  awk '
+    $0 == "define Device/cudy_tr3000-v1-ubootmod" {
+      found = 1
+      in_block = 1
+
+      print "define Device/cudy_tr3000-v1-ubootmod"
+      print "  DEVICE_VENDOR := Cudy"
+      print "  DEVICE_MODEL := TR3000"
+      print "  DEVICE_VARIANT := v1 (OpenWrt U-Boot layout)"
+      print "  DEVICE_DTS := mt7981b-cudy-tr3000-v1-ubootmod"
+      print "  DEVICE_DTS_DIR := ../dts"
+      print "  DEVICE_PACKAGES := kmod-usb3 kmod-mt7915e kmod-mt7981-firmware mt7981-wo-firmware automount"
+      print "  UBINIZE_OPTS := -E 5"
+      print "  BLOCKSIZE := 128k"
+      print "  PAGESIZE := 2048"
+      print "  KERNEL_IN_UBI := 1"
+      print "  UBOOTENV_IN_UBI := 1"
+      print "  IMAGES := sysupgrade.itb"
+      print "  KERNEL_INITRAMFS_SUFFIX := -recovery.itb"
+      print "  KERNEL := kernel-bin | gzip"
+      print "  KERNEL_INITRAMFS := kernel-bin | lzma | \\"
+      print "\tfit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb with-initrd | pad-to 64k"
+      print "  IMAGE/sysupgrade.itb := append-kernel | \\"
+      print "\tfit gzip $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb external-static-with-rootfs | append-metadata"
+      print "  ARTIFACTS := preloader.bin bl31-uboot.fip"
+      print "  ARTIFACT/preloader.bin := mt7981-bl2 cudy-tr3000-v1"
+      print "  ARTIFACT/bl31-uboot.fip := mt7981-bl31-uboot cudy_tr3000-v1"
+      next
+    }
+
+    in_block && $0 == "endef" {
+      in_block = 0
+      print
+      next
+    }
+
+    in_block {
+      next
+    }
+
+    {
+      print
+    }
+
+    END {
+      if (!found) {
+        exit 42
+      }
+    }
+  ' "${image_file}" > "${tmp}" || rc=$?
+
+  if (( rc != 0 )); then
+    rm -f "${tmp}"
+    if (( rc == 42 )); then
+      die "Cudy TR3000 ubootmod profile was not found in image definitions"
+    fi
+    die "failed to patch Cudy TR3000 ubootmod image definition"
+  fi
+
+  if cmp -s "${tmp}" "${image_file}"; then
+    rm -f "${tmp}"
+  else
+    mv "${tmp}" "${image_file}"
+    log "patched Cudy TR3000 ubootmod profile to emit sysupgrade.itb"
+  fi
+}
+
 verify_profile_exists() {
   local profile="$1"
   local image_dir="${SOURCE_DIR}/target/linux/mediatek/image"

@@ -28,6 +28,7 @@ if [[ -n "${UPSTREAM_REF}" ]]; then
 fi
 
 ensure_source_tree
+patch_tr3000_ubootmod_itb_profile
 
 pushd "${SOURCE_DIR}" >/dev/null
 

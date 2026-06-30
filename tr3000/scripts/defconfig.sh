@@ -6,6 +6,7 @@ source "${SCRIPT_DIR}/common.sh"
 
 ensure_dirs
 ensure_source_tree
+patch_tr3000_ubootmod_itb_profile
 [[ -f "${CONFIG_SEED}" ]] || die "config seed not found: ${CONFIG_SEED}"
 [[ -f "${BASE_DEFCONFIG}" ]] || die "base defconfig not found: ${BASE_DEFCONFIG}"
 
