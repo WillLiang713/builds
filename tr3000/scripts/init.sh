@@ -52,6 +52,8 @@ log "installing feeds"
 
 popd >/dev/null
 
+select_nikki_mihomo_provider
+
 profile="$(detect_device_profile)"
 log "detected device profile: ${profile}"
 

@@ -9,7 +9,9 @@ ensure_source_tree
 [[ -f "${CONFIG_SEED}" ]] || die "config seed not found: ${CONFIG_SEED}"
 
 profile="$(detect_device_profile)"
-config_symbol="CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_${profile}"
+config_symbol="CONFIG_TARGET_mediatek_filogic_DEVICE_${profile}"
+
+select_nikki_mihomo_provider
 
 log "generating .config for profile: ${profile}"
 {
@@ -30,7 +32,7 @@ required_symbols=(
   CONFIG_PACKAGE_luci-app-turboacc-mtk
   CONFIG_PACKAGE_luci-app-nikki
   CONFIG_PACKAGE_luci-app-upnp
-  CONFIG_PACKAGE_miniupnpd
+  CONFIG_PACKAGE_miniupnpd-nftables
   CONFIG_PACKAGE_luci-app-advanced-reboot
   CONFIG_PACKAGE_kmod-usb-net
   CONFIG_PACKAGE_kmod-usb-net-cdc-ether

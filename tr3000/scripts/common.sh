@@ -18,6 +18,7 @@ DEVICE_VARIANT_KEYWORD="${DEVICE_VARIANT_KEYWORD:-128}"
 NIKKI_FEED_NAME="${NIKKI_FEED_NAME:-nikki}"
 NIKKI_FEED_URL="${NIKKI_FEED_URL:-https://github.com/nikkinikki-org/OpenWrt-nikki.git}"
 NIKKI_FEED_BRANCH="${NIKKI_FEED_BRANCH:-main}"
+NIKKI_MIHOMO_PROVIDER="${NIKKI_MIHOMO_PROVIDER:-mihomo-meta}"
 
 JOBS="${JOBS:-$(nproc)}"
 BUILD_VERBOSE="${BUILD_VERBOSE:-0}"
@@ -54,6 +55,33 @@ find_package_makefile() {
       \( -path '*/build_dir/*' -o -path '*/staging_dir/*' -o -path '*/tmp/*' \) -prune \
       -o -type f -path "*/${package_name}/Makefile" -print -quit
   done
+}
+
+select_nikki_mihomo_provider() {
+  case "${NIKKI_MIHOMO_PROVIDER}" in
+    mihomo-meta|mihomo-alpha) ;;
+    *) die "unsupported NIKKI_MIHOMO_PROVIDER: ${NIKKI_MIHOMO_PROVIDER}" ;;
+  esac
+
+  local package_dir="${SOURCE_DIR}/package/feeds/${NIKKI_FEED_NAME}"
+  [[ -d "${package_dir}" ]] || return 0
+
+  local changed=0
+  local provider
+  for provider in mihomo-meta mihomo-alpha; do
+    [[ "${provider}" == "${NIKKI_MIHOMO_PROVIDER}" ]] && continue
+
+    if [[ -e "${package_dir}/${provider}" || -L "${package_dir}/${provider}" ]]; then
+      log "disabling nikki mihomo provider: ${provider}"
+      rm -f "${package_dir}/${provider}"
+      rm -f "${SOURCE_DIR}/tmp/info/.packageinfo-feeds_${NIKKI_FEED_NAME}_${provider}"
+      changed=1
+    fi
+  done
+
+  if (( changed )); then
+    rm -f "${SOURCE_DIR}/tmp/.config-package.in"
+  fi
 }
 
 verify_profile_exists() {
