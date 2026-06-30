@@ -22,7 +22,7 @@ if [[ -f "${SOURCE_DIR}/.config" ]]; then
 fi
 
 if [[ -x "${SOURCE_DIR}/scripts/diffconfig.sh" ]]; then
-  "${SOURCE_DIR}/scripts/diffconfig.sh" > "${dest}/diffconfig"
+  (cd "${SOURCE_DIR}" && ./scripts/diffconfig.sh) > "${dest}/diffconfig"
 fi
 
 cat > "${dest}/build-info.txt" <<EOF
