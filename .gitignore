@@ -1,0 +1,11 @@
+.agents/
+.codex/
+
+*.log
+
+**/.env
+**/source/
+**/dl/
+**/ccache/
+**/output/
+**/.cache/
