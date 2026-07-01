@@ -40,6 +40,31 @@ ensure_dirs() {
 ensure_source_tree() {
   [[ -f "${SOURCE_DIR}/Makefile" ]] || die "source tree is missing. Run: make init"
   [[ -x "${SOURCE_DIR}/scripts/feeds" ]] || die "OpenWrt feeds helper is missing under source/scripts/feeds"
+  sync_bundled_dl_archives
+}
+
+sync_bundled_dl_archives() {
+  local bundled_dl="${SOURCE_DIR}/dl"
+  [[ -d "${bundled_dl}" ]] || return 0
+
+  local bundled_real dl_real file base missing=0
+  bundled_real="$(readlink -f "${bundled_dl}")"
+  dl_real="$(readlink -f "${DL_DIR}")"
+  [[ "${bundled_real}" == "${dl_real}" ]] && return 0
+
+  while IFS= read -r -d '' file; do
+    base="$(basename "${file}")"
+    [[ -e "${DL_DIR}/${base}" ]] || missing=1
+  done < <(find "${bundled_dl}" -maxdepth 1 -type f -print0)
+
+  (( missing )) || return 0
+
+  log "copying bundled source archives from ${bundled_dl} to ${DL_DIR}"
+  while IFS= read -r -d '' file; do
+    base="$(basename "${file}")"
+    [[ -e "${DL_DIR}/${base}" ]] && continue
+    cp -p "${file}" "${DL_DIR}/${base}"
+  done < <(find "${bundled_dl}" -maxdepth 1 -type f -print0)
 }
 
 run_make() {
