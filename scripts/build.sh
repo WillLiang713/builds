@@ -15,3 +15,4 @@ log "building firmware for ${DEVICE_PROFILE} with ${JOBS} jobs"
 run_make "${make_args[@]}"
 
 "${SCRIPT_DIR}/collect-output.sh"
+log "build complete for ${DEVICE_PROFILE}"

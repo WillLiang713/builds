@@ -52,3 +52,6 @@ fi
 } > "${dest}/build-info.txt"
 
 log "output copied to: ${dest}"
+log "output summary:"
+log "  device profile: ${DEVICE_PROFILE}"
+log "  firmware output: ${dest}"
