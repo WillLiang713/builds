@@ -1,7 +1,0 @@
-/.env
-/source/
-/dl/
-/ccache/
-/output/
-/.cache/
-*.log

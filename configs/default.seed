@@ -1,5 +1,5 @@
 # Generated target lines are written by scripts/defconfig.sh.
-# MT7981 vendor WiFi/HNAT/WARP defaults are inherited from BASE_DEFCONFIG.
+# MediaTek vendor WiFi/HNAT/WARP defaults are inherited from BASE_DEFCONFIG.
 # Keep this file focused on project-specific package overlays.
 
 CONFIG_CCACHE=y

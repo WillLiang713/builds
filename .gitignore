@@ -4,6 +4,7 @@
 *.log
 
 **/.env
+configs/custom.seed
 **/source/
 **/dl/
 **/ccache/

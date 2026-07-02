@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtool \
     libzstd-dev \
     make \
+    nano \
     ninja-build \
     patch \
     perl \

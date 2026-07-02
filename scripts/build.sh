@@ -11,7 +11,7 @@ if [[ "${BUILD_VERBOSE}" == "1" ]]; then
   make_args+=("V=s")
 fi
 
-log "building firmware with ${JOBS} jobs"
+log "building firmware for ${DEVICE_PROFILE} with ${JOBS} jobs"
 run_make "${make_args[@]}"
 
 "${SCRIPT_DIR}/collect-output.sh"
