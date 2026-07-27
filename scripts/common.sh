@@ -36,6 +36,21 @@ NIKKI_FEED_NAME="${NIKKI_FEED_NAME:-nikki}"
 NIKKI_FEED_URL="${NIKKI_FEED_URL:-https://github.com/nikkinikki-org/OpenWrt-nikki.git}"
 NIKKI_FEED_BRANCH="${NIKKI_FEED_BRANCH:-main}"
 NIKKI_MIHOMO_PROVIDER="${NIKKI_MIHOMO_PROVIDER:-mihomo-meta}"
+# Official signed binary repo used on-device by opkg (not the compile-time Git feed).
+NIKKI_OPKG_REPO="${NIKKI_OPKG_REPO:-https://nikkinikki.pages.dev}"
+ROOTFS_FILES_DIR="${ROOTFS_FILES_DIR:-${WORKSPACE}/files}"
+
+# LuCI app: Tokisaki-Galaxy community panel; daemon still comes from packages feed.
+TAILSCALE_LUCI_URL="${TAILSCALE_LUCI_URL:-https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community.git}"
+TAILSCALE_LUCI_BRANCH="${TAILSCALE_LUCI_BRANCH:-master}"
+# On-device opkg host for upgrading luci-app-tailscale-community (not the daemon).
+TAILSCALE_OPKG_REPO="${TAILSCALE_OPKG_REPO:-https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community}"
+
+# USB shared-/64 IPv6 defaults (docs/f50-ipv6.md). Enabled by default for TR3000 (eth2/USB).
+USB_IPV6_ENABLE="${USB_IPV6_ENABLE:-1}"
+USB_DEVICE="${USB_DEVICE:-eth2}"
+USB_IPV4_IFACE="${USB_IPV4_IFACE:-USB}"
+USB_IPV6_IFACE="${USB_IPV6_IFACE:-USB6}"
 
 JOBS="${JOBS:-$(nproc 2>/dev/null || printf '1')}"
 BUILD_VERBOSE="${BUILD_VERBOSE:-0}"
@@ -260,4 +275,129 @@ select_nikki_mihomo_provider() {
   if (( changed )); then
     rm -f "${SOURCE_DIR}/tmp/.config-package.in"
   fi
+}
+
+# OpenWrt copies $(TOPDIR)/files onto the rootfs. Keep SOURCE_DIR/files in sync
+# with the project overlay (signed opkg keys + first-boot feed setup).
+sync_rootfs_overlay() {
+  local src="${ROOTFS_FILES_DIR}"
+  local dst="${SOURCE_DIR}/files"
+  local feed_script
+
+  [[ -d "${src}" ]] || return 0
+
+  log "syncing rootfs overlay: ${src} -> ${dst}"
+  mkdir -p "${dst}"
+  # Refresh managed tree without deleting unrelated files under source/files.
+  (cd "${src}" && tar cf - .) | (cd "${dst}" && tar xf -)
+
+  if [[ -d "${dst}/etc/uci-defaults" ]]; then
+    find "${dst}/etc/uci-defaults" -type f -exec chmod +x {} +
+  fi
+
+  # Allow overriding feed hosts without editing the overlay templates.
+  feed_script="${dst}/etc/uci-defaults/99_nikki_opkg_feed"
+  if [[ -f "${feed_script}" && "${NIKKI_OPKG_REPO}" != "https://nikkinikki.pages.dev" ]]; then
+    sed -i "s|https://nikkinikki.pages.dev|${NIKKI_OPKG_REPO}|g" "${feed_script}"
+  fi
+
+  feed_script="${dst}/etc/uci-defaults/99_tailscale_community_opkg_feed"
+  if [[ -f "${feed_script}" && "${TAILSCALE_OPKG_REPO}" != "https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community" ]]; then
+    sed -i "s|https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community|${TAILSCALE_OPKG_REPO}|g" "${feed_script}"
+  fi
+
+  apply_usb_ipv6_overlay "${dst}"
+}
+
+# Bake or strip the USB IPv6 first-boot defaults under the synced rootfs overlay.
+apply_usb_ipv6_overlay() {
+  local dst="$1"
+  local script="${dst}/etc/uci-defaults/99_f50_ipv6"
+
+  case "${USB_IPV6_ENABLE}" in
+    1|yes|true|on|ON|Yes|True) ;;
+    *)
+      if [[ -f "${script}" ]]; then
+        log "USB_IPV6_ENABLE=${USB_IPV6_ENABLE}: removing ${script}"
+        rm -f "${script}"
+      fi
+      return 0
+      ;;
+  esac
+
+  [[ -f "${script}" ]] || return 0
+
+  log "enabling USB IPv6 defaults: device=${USB_DEVICE} ipv4=${USB_IPV4_IFACE} ipv6=${USB_IPV6_IFACE}"
+  # Rewrite the three shell assignments near the top of the uci-defaults script.
+  sed -i \
+    -e "s|^USB_DEVICE=.*|USB_DEVICE=\"${USB_DEVICE}\"|" \
+    -e "s|^USB_IPV4_IFACE=.*|USB_IPV4_IFACE=\"${USB_IPV4_IFACE}\"|" \
+    -e "s|^USB_IPV6_IFACE=.*|USB_IPV6_IFACE=\"${USB_IPV6_IFACE}\"|" \
+    "${script}"
+  chmod +x "${script}"
+}
+
+# Prevent base-files from writing VERSION_REPO/.../nikki into distfeeds.conf.
+disable_nikki_distfeed_config() {
+  local config_file="${SOURCE_DIR}/.config"
+  [[ -f "${config_file}" ]] || return 0
+
+  if grep -Eq '^CONFIG_FEED_nikki=y$' "${config_file}"; then
+    log "disabling CONFIG_FEED_nikki (avoids broken ImmortalWrt mirror nikki distfeed)"
+  fi
+
+  sed -i \
+    -e '/^CONFIG_FEED_nikki=/d' \
+    -e '/^# CONFIG_FEED_nikki /d' \
+    "${config_file}"
+  printf '# CONFIG_FEED_nikki is not set\n' >> "${config_file}"
+}
+
+# Sync Tokisaki-Galaxy/luci-app-tailscale-community into package/.
+# Upstream layout is repo/luci-app-tailscale-community/Makefile (not repo-root Makefile).
+ensure_luci_app_tailscale() {
+  local url="${TAILSCALE_LUCI_URL}"
+  local branch="${TAILSCALE_LUCI_BRANCH}"
+  local clone_dir="${SOURCE_DIR}/.package-src/luci-app-tailscale-community"
+  local dest="${SOURCE_DIR}/package/luci-app-tailscale-community"
+  local pkg_src
+  local old_dest="${SOURCE_DIR}/package/luci-app-tailscale"
+
+  mkdir -p "${SOURCE_DIR}/package" "${SOURCE_DIR}/.package-src"
+
+  # Drop the previous asvow package path if it remains from older builder configs.
+  if [[ -e "${old_dest}" ]]; then
+    log "removing legacy package path: ${old_dest}"
+    rm -rf "${old_dest}"
+  fi
+
+  if [[ -d "${clone_dir}/.git" ]]; then
+    log "updating luci-app-tailscale-community: ${url} (${branch})"
+    git -C "${clone_dir}" fetch --tags origin
+    git -C "${clone_dir}" checkout "${branch}"
+    if git -C "${clone_dir}" rev-parse --verify "origin/${branch}" >/dev/null 2>&1; then
+      git -C "${clone_dir}" merge --ff-only "origin/${branch}"
+    fi
+  elif [[ -e "${clone_dir}" ]]; then
+    die "luci-app-tailscale-community clone path exists but is not a git checkout: ${clone_dir}"
+  else
+    log "cloning luci-app-tailscale-community: ${url} (${branch})"
+    git clone --depth 1 --branch "${branch}" "${url}" "${clone_dir}"
+  fi
+
+  if [[ -f "${clone_dir}/luci-app-tailscale-community/Makefile" ]]; then
+    pkg_src="${clone_dir}/luci-app-tailscale-community"
+  elif [[ -f "${clone_dir}/Makefile" ]]; then
+    pkg_src="${clone_dir}"
+  else
+    die "could not find luci-app-tailscale-community Makefile under ${clone_dir}"
+  fi
+
+  log "installing package tree: ${pkg_src} -> ${dest}"
+  rm -rf "${dest}"
+  mkdir -p "${dest}"
+  # Prefer tar over rsync so the builder image needs no extra packages.
+  (cd "${pkg_src}" && tar cf - --exclude='.git' .) | (cd "${dest}" && tar xf -)
+
+  [[ -f "${dest}/Makefile" ]] || die "luci-app-tailscale-community Makefile missing under ${dest}"
 }

@@ -53,6 +53,7 @@ log "installing feeds"
 popd >/dev/null
 
 select_nikki_mihomo_provider
+ensure_luci_app_tailscale
 
 if [[ -f "$(filogic_image_file)" ]]; then
   count="$("${SCRIPT_DIR}/list-devices.sh" --raw | wc -l | tr -d ' ')"
@@ -62,7 +63,7 @@ else
 fi
 
 missing=()
-for package_name in luci-app-nikki luci-theme-argon luci-app-turboacc-mtk luci-app-ttyd luci-app-upnp; do
+for package_name in luci-app-nikki luci-theme-argon luci-app-turboacc-mtk luci-app-ttyd luci-app-upnp luci-app-tailscale-community tailscale; do
   if [[ -z "$(find_package_makefile "${package_name}")" ]]; then
     missing+=("${package_name}")
   fi
@@ -71,7 +72,7 @@ done
 if (( ${#missing[@]} > 0 )); then
   printf '[builder] Missing package directories after feeds install:\n' >&2
   printf '  %s\n' "${missing[@]}" >&2
-  die "check feeds.conf, nikki feed URL, or package names"
+  die "check feeds.conf, nikki feed URL, tailscale community LuCI repo, or package names"
 fi
 
 log "init complete"

@@ -35,10 +35,23 @@ CONFIG_PACKAGE_luci-i18n-turboacc-mtk-zh-cn=y
 CONFIG_PACKAGE_nikki=y
 CONFIG_PACKAGE_luci-app-nikki=y
 CONFIG_PACKAGE_luci-i18n-nikki-zh-cn=y
+# Keep nikki out of distfeeds.conf. OpenWrt would otherwise publish it under
+# VERSION_REPO (.../packages/$ARCH/nikki), which ImmortalWrt mirrors do not host.
+# Runtime opkg uses the official feed via files/etc/uci-defaults/99_nikki_opkg_feed.
+# CONFIG_FEED_nikki is not set
 
 CONFIG_PACKAGE_miniupnpd-nftables=y
 CONFIG_PACKAGE_luci-app-upnp=y
 CONFIG_PACKAGE_luci-i18n-upnp-zh-cn=y
+
+# Tailscale daemon from packages feed; LuCI + zh-cn from
+# Tokisaki-Galaxy/luci-app-tailscale-community (synced into source/package/ by init).
+# Runtime opkg upgrades for the LuCI panel use the community feed via
+# files/etc/uci-defaults/99_tailscale_community_opkg_feed (same idea as Nikki).
+CONFIG_PACKAGE_kmod-tun=y
+CONFIG_PACKAGE_tailscale=y
+CONFIG_PACKAGE_luci-app-tailscale-community=y
+CONFIG_PACKAGE_luci-i18n-tailscale-community-zh-cn=y
 
 # CONFIG_PACKAGE_luci-app-advanced-reboot is not set
 # CONFIG_PACKAGE_luci-i18n-advanced-reboot-zh-cn is not set

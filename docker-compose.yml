@@ -22,6 +22,14 @@ services:
       NIKKI_FEED_URL: ${NIKKI_FEED_URL:-https://github.com/nikkinikki-org/OpenWrt-nikki.git}
       NIKKI_FEED_BRANCH: ${NIKKI_FEED_BRANCH:-main}
       NIKKI_MIHOMO_PROVIDER: ${NIKKI_MIHOMO_PROVIDER:-mihomo-meta}
+      NIKKI_OPKG_REPO: ${NIKKI_OPKG_REPO:-https://nikkinikki.pages.dev}
+      TAILSCALE_LUCI_URL: ${TAILSCALE_LUCI_URL:-https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community.git}
+      TAILSCALE_LUCI_BRANCH: ${TAILSCALE_LUCI_BRANCH:-master}
+      TAILSCALE_OPKG_REPO: ${TAILSCALE_OPKG_REPO:-https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community}
+      USB_IPV6_ENABLE: ${USB_IPV6_ENABLE:-1}
+      USB_DEVICE: ${USB_DEVICE:-eth2}
+      USB_IPV4_IFACE: ${USB_IPV4_IFACE:-USB}
+      USB_IPV6_IFACE: ${USB_IPV6_IFACE:-USB6}
       JOBS: ${JOBS:-}
       BUILD_VERBOSE: ${BUILD_VERBOSE:-0}
     volumes:

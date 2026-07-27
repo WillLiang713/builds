@@ -6,6 +6,10 @@ source "${SCRIPT_DIR}/common.sh"
 
 "${SCRIPT_DIR}/defconfig.sh"
 
+# defconfig already synced the overlay; refresh again in case files/ changed mid-session.
+sync_rootfs_overlay
+disable_nikki_distfeed_config
+
 make_args=("-j${JOBS}")
 if [[ "${BUILD_VERBOSE}" == "1" ]]; then
   make_args+=("V=s")

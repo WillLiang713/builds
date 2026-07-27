@@ -22,6 +22,11 @@ mapfile -t seed_files < <(selected_seed_files)
 config_symbol="CONFIG_TARGET_mediatek_filogic_DEVICE_${DEVICE_PROFILE}"
 
 select_nikki_mihomo_provider
+# Keep Tailscale LuCI available even if the user skipped a fresh make init.
+if [[ ! -f "${SOURCE_DIR}/package/luci-app-tailscale-community/Makefile" ]]; then
+  ensure_luci_app_tailscale
+fi
+sync_rootfs_overlay
 
 log "generating .config for profile: ${DEVICE_PROFILE}"
 log "base defconfig: ${BASE_DEFCONFIG}"
@@ -52,6 +57,15 @@ done
 } > "${SOURCE_DIR}/.config"
 
 run_make defconfig
+# FEED_nikki defaults to y once the src-git feed exists; force it off so base-files
+# does not emit VERSION_REPO/.../nikki into distfeeds.conf.
+disable_nikki_distfeed_config
+run_make defconfig
+disable_nikki_distfeed_config
+
+if grep -Eq '^CONFIG_FEED_nikki=y$' "${SOURCE_DIR}/.config"; then
+  die "failed to disable CONFIG_FEED_nikki; firmware would ship a broken nikki distfeed under VERSION_REPO"
+fi
 
 required_symbols=(
   "${config_symbol}"
@@ -66,6 +80,9 @@ required_symbols=(
   CONFIG_PACKAGE_luci-app-nikki
   CONFIG_PACKAGE_luci-app-upnp
   CONFIG_PACKAGE_miniupnpd-nftables
+  CONFIG_PACKAGE_tailscale
+  CONFIG_PACKAGE_luci-app-tailscale-community
+  CONFIG_PACKAGE_luci-i18n-tailscale-community-zh-cn
   CONFIG_PACKAGE_kmod-usb-net
   CONFIG_PACKAGE_kmod-usb-net-cdc-ether
   CONFIG_PACKAGE_kmod-usb-net-cdc-ncm

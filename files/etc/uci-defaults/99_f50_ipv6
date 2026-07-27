@@ -1,0 +1,99 @@
+#!/bin/sh
+# F50 shared-/64 IPv6 defaults (RFC 7278 extendprefix + NDP relay).
+# Documented in docs/f50-ipv6.md.
+#
+# Defaults match Cudy TR3000 + ZTE F50 over USB:
+#   physical device: eth2
+#   IPv4 interface:  USB
+#   IPv6 interface:  USB6
+#
+# Placeholders below may be rewritten at build time by sync_rootfs_overlay.
+
+USB_DEVICE="eth2"
+USB_IPV4_IFACE="USB"
+USB_IPV6_IFACE="USB6"
+
+. /lib/functions.sh 2>/dev/null || true
+
+zone_has_network() {
+	local zone_idx="$1"
+	local net="$2"
+	local n
+
+	for n in $(uci -q get "firewall.@zone[${zone_idx}].network"); do
+		[ "$n" = "$net" ] && return 0
+	done
+	return 1
+}
+
+ensure_wan_network() {
+	local net="$1"
+	local i=0
+
+	while uci -q get "firewall.@zone[${i}]" >/dev/null 2>&1; do
+		if [ "$(uci -q get "firewall.@zone[${i}].name")" = "wan" ]; then
+			if ! zone_has_network "$i" "$net"; then
+				uci add_list "firewall.@zone[${i}].network=${net}"
+			fi
+			return 0
+		fi
+		i=$((i + 1))
+	done
+
+	# No wan zone found; skip rather than inventing firewall policy.
+	return 0
+}
+
+# --- IPv4 USB WAN (create only if missing; do not override an existing USB) ---
+if ! uci -q get "network.${USB_IPV4_IFACE}" >/dev/null 2>&1; then
+	uci -q batch <<-EOF
+		set network.${USB_IPV4_IFACE}=interface
+		set network.${USB_IPV4_IFACE}.proto='dhcp'
+		set network.${USB_IPV4_IFACE}.device='${USB_DEVICE}'
+	EOF
+fi
+
+# --- USB6 DHCPv6 client + RFC 7278 ---
+uci -q batch <<-EOF
+	set network.${USB_IPV6_IFACE}=interface
+	set network.${USB_IPV6_IFACE}.proto='dhcpv6'
+	set network.${USB_IPV6_IFACE}.device='${USB_DEVICE}'
+	set network.${USB_IPV6_IFACE}.reqaddress='try'
+	set network.${USB_IPV6_IFACE}.reqprefix='auto'
+	set network.${USB_IPV6_IFACE}.norelease='1'
+	set network.${USB_IPV6_IFACE}.extendprefix='1'
+EOF
+
+# --- LAN uses the extended /64 ---
+uci -q set network.lan.ip6assign='64'
+
+# --- odhcpd: USB6 is NDP-relay master (upstream) ---
+uci -q batch <<-EOF
+	set dhcp.${USB_IPV6_IFACE}=dhcp
+	set dhcp.${USB_IPV6_IFACE}.interface='${USB_IPV6_IFACE}'
+	set dhcp.${USB_IPV6_IFACE}.ignore='1'
+	set dhcp.${USB_IPV6_IFACE}.master='1'
+	set dhcp.${USB_IPV6_IFACE}.ra='disabled'
+	set dhcp.${USB_IPV6_IFACE}.dhcpv6='disabled'
+	set dhcp.${USB_IPV6_IFACE}.ndp='relay'
+EOF
+
+# --- odhcpd: LAN RA server + NDP relay slave ---
+uci -q batch <<-EOF
+	set dhcp.lan.ra='server'
+	set dhcp.lan.dhcpv6='disabled'
+	set dhcp.lan.ndp='relay'
+	set dhcp.lan.ra_slaac='1'
+	set dhcp.lan.ndproxy_routing='1'
+	delete dhcp.lan.master
+EOF
+
+# --- firewall wan covers USB + USB6 ---
+ensure_wan_network "${USB_IPV4_IFACE}"
+ensure_wan_network "${USB_IPV6_IFACE}"
+
+uci -q commit network
+uci -q commit dhcp
+uci -q commit firewall
+
+exit 0

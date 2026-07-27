@@ -65,9 +65,76 @@ DEVICE_PROFILE=             selected device profile, written by the menu
 UPSTREAM_REPO=              upstream source repository
 UPSTREAM_REF=               branch, tag, or commit; empty uses the default branch
 BASE_DEFCONFIG=             manual base defconfig override; usually empty
+NIKKI_FEED_URL=             compile-time Git feed for building nikki into the image
+NIKKI_OPKG_REPO=            on-device opkg host (default: https://nikkinikki.pages.dev)
 JOBS=                       build job count; empty uses nproc
 BUILD_VERBOSE=0             set to 1 for verbose build logs
 ```
+
+### Nikki package feeds
+
+Two different feeds are involved:
+
+| Stage | Variable / mechanism | Purpose |
+|-------|----------------------|---------|
+| Compile | `NIKKI_FEED_URL` (GitHub `OpenWrt-nikki`) | Build packages into the firmware |
+| Runtime opkg | `NIKKI_OPKG_REPO` (`nikkinikki.pages.dev`) | Update packages on the device |
+
+OpenWrt would otherwise add a `distfeeds` entry for feed name `nikki` under `VERSION_REPO` (for example an ImmortalWrt mirror such as Vsean). That path does not host Nikki's third-party packages. This builder disables `CONFIG_FEED_nikki` and installs:
+
+```text
+files/etc/opkg/keys/<nikki-pubkey>
+files/etc/uci-defaults/99_nikki_opkg_feed
+```
+
+so first boot writes the official signed feed into `/etc/opkg/customfeeds.conf`.
+
+### Tailscale
+
+The firmware includes:
+
+```text
+tailscale                                 from packages feed
+luci-app-tailscale-community              from Tokisaki-Galaxy/luci-app-tailscale-community
+luci-i18n-tailscale-community-zh-cn       from the app's po/zh_Hans
+```
+
+`make init` clones the community LuCI repo and copies its package tree into
+`source/package/luci-app-tailscale-community`. The stock `tailscale` package is
+left unchanged (this panel does not replace the daemon init/config).
+
+Same pattern as Nikki: the image also bakes the community signed opkg feed so
+devices can upgrade the LuCI panel without rebuilding firmware:
+
+```text
+files/etc/opkg/keys/<community-pubkey>
+files/etc/uci-defaults/99_tailscale_community_opkg_feed
+# -> src/gz tailscale_community https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community/all
+```
+
+Override:
+
+```text
+TAILSCALE_LUCI_URL=https://github.com/Tokisaki-Galaxy/luci-app-tailscale-community.git
+TAILSCALE_LUCI_BRANCH=master
+TAILSCALE_OPKG_REPO=https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community
+```
+
+### USB IPv6 defaults
+
+First boot applies the shared-`/64` layout from [docs/f50-ipv6.md](docs/f50-ipv6.md)
+(RFC 7278 `extendprefix` + NDP relay). Defaults match **Cudy TR3000 + ZTE F50**:
+
+```text
+USB_IPV6_ENABLE=1
+USB_DEVICE=eth2
+USB_IPV4_IFACE=USB
+USB_IPV6_IFACE=USB6
+```
+
+This creates/updates `USB` (IPv4 DHCP if missing), `USB6` (DHCPv6 + extendprefix),
+LAN `ip6assign=64`, odhcpd NDP relay, and adds both interfaces to the firewall
+`wan` zone. Set `USB_IPV6_ENABLE=0` to omit the first-boot script from the image.
 
 Default package configuration lives in:
 

@@ -1,0 +1,26 @@
+#!/bin/sh
+# Configure Tokisaki-Galaxy luci-app-tailscale-community signed opkg feed.
+#
+# The LuCI panel is compiled into the image from source; this feed lets opkg
+# upgrade luci-app-tailscale-community and its i18n packages later without a
+# full firmware rebuild. See project README for the same host/key.
+
+[ -x /bin/opkg ] || exit 0
+
+repository_url="https://Tokisaki-Galaxy.github.io/luci-app-tailscale-community"
+feed_url="${repository_url}/all"
+
+mkdir -p /etc/opkg
+touch /etc/opkg/customfeeds.conf
+
+# Remove previous community feed lines (name or host).
+if grep -qE 'tailscale_community|luci-app-tailscale-community' /etc/opkg/customfeeds.conf 2>/dev/null; then
+	sed -i \
+		-e '/tailscale_community/d' \
+		-e '/luci-app-tailscale-community/d' \
+		/etc/opkg/customfeeds.conf
+fi
+
+echo "src/gz tailscale_community ${feed_url}" >> /etc/opkg/customfeeds.conf
+
+exit 0
