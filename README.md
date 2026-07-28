@@ -3,11 +3,57 @@
 This repository provides one generic builder for MediaTek Filogic firmware.
 Normal use happens from the repository root.
 
+> 中文说明（简体中文）：[README.zh-CN.md](README.zh-CN.md)
+
+## Environment Requirements and Limitations
+
+Docker is required. The builder uses the "builder" service in
+docker-compose.yml for source initialization, feed updates, OpenWrt
+configuration, firmware compilation, and cleanup. The host does not need the
+OpenWrt toolchain installed directly.
+
+Install and verify the following before starting:
+
+```bash
+docker --version
+docker compose version
+make --version
+bash --version
+```
+
+The project uses Docker Compose v2 syntax ("docker compose"). The legacy
+"docker-compose" command is not used by the Makefile. The Docker daemon must be
+running, and the current user must be allowed to access it.
+
+The host still needs GNU Make and Bash because the menu, device selector, and
+package selector scripts run from the host. On Windows, use WSL2 or Git Bash
+with GNU Make and Docker Desktop; a PowerShell-only workflow is not supported
+for the ./scripts/*.sh entry points. Docker Desktop must be able to share the
+repository directory with the container.
+
+The first initialization requires network access to clone the upstream source,
+update feeds, and fetch external repositories. Later builds may still download
+source archives. The generated source/, dl/, ccache/, and output/ directories
+can become large and are excluded from git.
+
+There is no hard resource check in the scripts. As a starting point, reserve
+at least 30 GB of free disk space and 8 GB of RAM; larger package selections
+may need more. Increase Docker Desktop's CPU, memory, and disk limits when
+needed, or lower JOBS in .env on machines with limited memory.
+
+The builder is limited to MediaTek Filogic device profiles available in the
+current upstream filogic.mk. Automatic base defconfig detection currently
+handles mt7981, mt7986, and mt7988 DTS names; changed or unsupported profiles
+may require a manual BASE_DEFCONFIG. This project builds firmware but does not
+flash or recover a router.
+
 ## Quick Start
 
 Run from the repository root:
 
 ```bash
+cp .env.example .env
+docker compose build
 make
 ```
 
