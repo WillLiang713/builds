@@ -11,6 +11,7 @@ mapfile -t devices < <("${SCRIPT_DIR}/list-devices.sh" --raw)
 
 filter=""
 max_rows=80
+page=0
 
 device_display() {
   local row="$1"
@@ -46,22 +47,27 @@ while true; do
     fi
   done
 
+  page_count=0
+  page_start=0
+  page_end=0
   if (( ${#visible[@]} == 0 )); then
     printf 'No matches. Use /keyword to search again, a to show all, q to return.\n'
   else
-    shown="${#visible[@]}"
-    (( shown > max_rows )) && shown="${max_rows}"
-    for ((i = 0; i < shown; i++)); do
+    page_count=$(( (${#visible[@]} + max_rows - 1) / max_rows ))
+    (( page >= page_count )) && page=$((page_count - 1))
+    page_start=$((page * max_rows))
+    page_end=$((page_start + max_rows))
+    (( page_end > ${#visible[@]} )) && page_end="${#visible[@]}"
+
+    printf 'Page %d/%d (showing %d-%d of %d matches)\n\n' "$((page + 1))" "$page_count" "$((page_start + 1))" "$page_end" "${#visible[@]}"
+    for ((i = page_start; i < page_end; i++)); do
       IFS=$'\t' read -r profile display <<< "$(device_display "${visible[i]}")"
-      printf '%4d. %-38s %s\n' "$((i + 1))" "${profile}" "${display}"
+      printf '%4d. %-38s %s\n' "$((i - page_start + 1))" "${profile}" "${display}"
     done
-    if (( ${#visible[@]} > max_rows )); then
-      printf '... showing %d of %d matches. Search to narrow the list.\n' "${max_rows}" "${#visible[@]}"
-    fi
   fi
 
   printf '\n'
-  read -r -p 'Number to select, /keyword to search, a all, q return: ' input
+  read -r -p 'Number to select, n next, p previous, /keyword to search, a all, q return: ' input
 
   case "${input}" in
     q|Q)
@@ -69,10 +75,28 @@ while true; do
       ;;
     a|A|"")
       filter=""
+      page=0
       continue
       ;;
     /*)
       filter="${input#/}"
+      page=0
+      continue
+      ;;
+    n|N)
+      if (( ${#visible[@]} == 0 || page + 1 >= page_count )); then
+        printf 'Already on the last page.\n' >&2
+      else
+        page=$((page + 1))
+      fi
+      continue
+      ;;
+    p|P)
+      if (( page <= 0 )); then
+        printf 'Already on the first page.\n' >&2
+      else
+        page=$((page - 1))
+      fi
       continue
       ;;
   esac
@@ -83,12 +107,13 @@ while true; do
   fi
 
   index=$((input - 1))
-  if (( index < 0 || index >= ${#visible[@]} || index >= max_rows )); then
+  page_size=$((page_end - page_start))
+  if (( index < 0 || index >= page_size )); then
     printf 'Selection out of range: %s\n' "${input}" >&2
     continue
   fi
 
-  IFS=$'\t' read -r profile _vendor _model _variant <<< "${visible[index]}"
+  IFS=$'\t' read -r profile _vendor _model _variant <<< "${visible[page_start + index]}"
   verify_profile_exists "${profile}" || die "selected profile is not buildable: ${profile}"
   update_env_var DEVICE_PROFILE "${profile}"
   printf 'Selected device profile: %s\n' "${profile}"
