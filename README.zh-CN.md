@@ -167,6 +167,7 @@ make shell       # 打开 builder 容器 shell
 - [USB IPv6 配置](docs/f50-ipv6.md)
 - [OpenWrt 使用说明](docs/openwrt.md)
 - [去广告说明](docs/anti-ad.md)
+- [Nikki 与 Tailscale CGNAT 冲突排障](docs/nikki-tailscale-cgnat.md)
 
 ## 许可证
 
